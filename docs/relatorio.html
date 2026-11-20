@@ -1,0 +1,27 @@
+<!DOCTYPE html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Relatório de testes da Biblioteca Online</title>
+<style>
+*{box-sizing:border-box}body{max-width:810px;margin:32px auto;padding:0 30px;color:#172d39;font:16px/1.45 system-ui,sans-serif}h1{font-size:36px;line-height:1.1;margin:.3em 0}h2{font-size:19px;margin:1.1em 0 .2em;color:#156253}p{margin:.4em 0}label{display:block;margin:.65em 0}input{width:100%;padding:.5em;font:inherit}button{padding:.7em 1em;margin:12px 0}img{max-width:100%;max-height:290px;object-fit:contain}small{color:#526571}a{overflow-wrap:anywhere} @page{size:A4;margin:15mm}@media print{body{padding:0;margin:0;max-width:none;font-size:10.5pt}h1{font-size:24pt}h2{font-size:13pt}.controle{display:none}figure{break-inside:avoid;margin:8px 0}img{max-height:64mm}a{color:inherit}}
+</style><body>
+<small>Qualidade de software · Relatório de atividade</small>
+<h1>Testes automatizados na Biblioteca Online</h1>
+<p>A atividade acompanha a consulta ao acervo desde a resposta da API até a tela do leitor. O projeto usa Node.js, Express e PostgreSQL. A interface permite entrar na conta, cadastrar livros e atualizar a lista.</p>
+<h2>O que foi testado</h2>
+<p><b>Backend.</b> Três testes chamam o controlador da rota GET /livros. Eles conferem se a API devolve os registros com status 200, se aceita um acervo vazio e se responde com status 500 quando a consulta falha.</p>
+<p><b>Frontend.</b> Dois testes carregam a página e seu JavaScript no jsdom. O primeiro verifica o título e o estoque de um livro e aciona “Atualizar Lista”. Quando a segunda consulta retorna vazia, a tela substitui o livro pela mensagem de acervo vazio. O segundo verifica a orientação para entrar na conta quando a API retorna 401.</p>
+<h2>Resultado e publicação</h2>
+<p>Na execução local, os cinco testes passaram. O GitHub Actions instala as dependências e executa a mesma suíte. Na branch main, a etapa seguinte envia ao Render o identificador do commit aprovado e acompanha a publicação até o serviço ficar disponível nessa versão.</p>
+<h2>Dificuldades e soluções</h2>
+<p>O repositório original tinha duas versões do backend. A branch API-online forneceu a implementação compatível com o PostgreSQL. Para testar falhas de consulta de modo repetível, a suíte substitui temporariamente a chamada ao banco. Outra dificuldade estava no endereço fixo do frontend, que apontava para localhost. O uso de uma rota relativa permite que o navegador encontre a API no endereço publicado.</p>
+<h2>Evidência da execução</h2>
+<div class="controle"><label>Link do repositório público <input id="repo" type="url" placeholder="Cole o endereço do novo repositório"></label><label>Link da execução do GitHub Actions <input id="run" type="url" placeholder="Cole o endereço da execução concluída"></label><label>Print com Testes e Deploy concluídos <input id="foto" type="file" accept="image/*"></label></div>
+<p>Repositório: <a id="r">pendente</a><br>Execução: <a id="u">pendente</a></p>
+<figure><img id="print" hidden alt="Execução do GitHub Actions com as etapas Testes e Deploy"></figure>
+<button class="controle" id="salvar">Salvar em PDF</button>
+<script>
+const el=id=>document.getElementById(id);
+for(const [campo,saida] of [['repo','r'],['run','u']]){
+ el(campo).oninput=()=>{const url=el(campo).value.trim();el(saida).textContent=url||'pendente';if(/^https:\/\//i.test(url))el(saida).href=url;else el(saida).removeAttribute('href')};
+}
+el('foto').onchange=()=>{const arquivo=el('foto').files[0];if(arquivo){el('print').src=URL.createObjectURL(arquivo);el('print').hidden=false}};
+el('salvar').onclick=()=>{if(!el('r').href||!el('u').href||el('print').hidden){alert('Inclua os dois links e o print para finalizar o relatório.');return}window.print()};
+</script></body></html>
