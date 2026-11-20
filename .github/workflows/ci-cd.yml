@@ -1,0 +1,58 @@
+name: Biblioteca Online
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  deploy:
+    name: Deploy
+    needs: testes
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: biblioteca-render
+      cancel-in-progress: false
+    steps:
+      - name: Publicar o commit testado e aguardar o Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          : "${RENDER_API_KEY:?Configure RENDER_API_KEY nos secrets}"
+          : "${RENDER_SERVICE_ID:?Configure RENDER_SERVICE_ID nos secrets}"
+          url="https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys"
+          auth="Authorization: Bearer $RENDER_API_KEY"
+          body=$(jq -n --arg sha "$GITHUB_SHA" '{commitId: $sha}')
+          id=$(curl -fsS --max-time 30 -H "$auth" -H 'Content-Type: application/json' -d "$body" "$url" | jq -er '.id')
+          for tentativa in {1..70}; do
+            resultado=$(curl -fsS --retry 3 --max-time 20 -H "$auth" "$url/$id")
+            status=$(jq -er '.status' <<< "$resultado")
+            echo "Render: $status"
+            case "$status" in
+              live) jq -e --arg sha "$GITHUB_SHA" '.commit.id == $sha' <<< "$resultado" > /dev/null; exit 0 ;;
+              *failed|canceled|deactivated) exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "Tempo de espera esgotado."
+          exit 1
